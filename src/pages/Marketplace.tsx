@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { MarketplaceSidebar } from '@/components/layout/MarketplaceSidebar';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { ListingCard } from '@/components/marketplace/ListingCard';
 import { CreateListing } from '@/components/marketplace/CreateListing';
 import { DisclaimerSection } from '@/components/marketplace/DisclaimerSection';
 import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Filter, SortAsc } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 // Mock data
 const mockListings = [
@@ -108,6 +107,7 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(6);
+  const [sortBy, setSortBy] = useState('newest');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -128,10 +128,23 @@ export default function Marketplace() {
         listing.location.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+
+    // Sort listings
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'newest':
+        default:
+          return 0; // Keep original order for newest
+      }
+    });
     
     setFilteredListings(filtered);
     setVisibleCount(6); // Reset visible count when filters change
-  }, [selectedCategory, searchQuery, listings]);
+  }, [selectedCategory, searchQuery, listings, sortBy]);
 
   const handleFavoriteToggle = (id: string) => {
     setListings(prev => prev.map(listing =>
@@ -167,37 +180,52 @@ export default function Marketplace() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-marketplace-bg">
-        <MarketplaceSidebar
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onCreateListing={() => setShowCreateListing(true)}
-        />
-        
+    <div className="min-h-screen flex flex-col w-full bg-gray-50/50">
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex min-h-screen">
+        {/* Sidebar - handled by MarketplaceHeader */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <MarketplaceHeader />
+          <MarketplaceHeader
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onCreateListing={() => setShowCreateListing(true)}
+          />
           
           <main className="flex-1 overflow-y-auto">
-            <div className="container mx-auto px-4 py-6 space-y-8">
+            <div className="container mx-auto px-6 py-8 space-y-8 max-w-7xl">
               {/* Results Header */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold">
+                  <h2 className="text-3xl font-bold text-foreground">
                     {selectedCategory === 'all' ? 'All Listings' : 
                      selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground mt-1">
                     {filteredListings.length} items found
                     {searchQuery && ` for "${searchQuery}"`}
                   </p>
                 </div>
+                
+                {/* Sort Options */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortBy(sortBy === 'newest' ? 'price-low' : sortBy === 'price-low' ? 'price-high' : 'newest')}
+                    className="gap-2"
+                  >
+                    <SortAsc className="w-4 h-4" />
+                    {sortBy === 'newest' && 'Newest First'}
+                    {sortBy === 'price-low' && 'Price: Low to High'}
+                    {sortBy === 'price-high' && 'Price: High to Low'}
+                  </Button>
+                </div>
               </div>
 
               {/* Listings Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                 {filteredListings.slice(0, visibleCount).map((listing) => (
                   <ListingCard
                     key={listing.id}
@@ -215,7 +243,7 @@ export default function Marketplace() {
                     onClick={loadMore}
                     variant="outline"
                     size="lg"
-                    className="gap-2"
+                    className="gap-2 hover:bg-primary hover:text-white transition-colors"
                   >
                     Load More
                     <ChevronDown className="w-4 h-4" />
@@ -225,20 +253,23 @@ export default function Marketplace() {
 
               {/* No Results */}
               {filteredListings.length === 0 && (
-                <div className="text-center py-12">
-                  <h3 className="text-lg font-semibold mb-2">No listings found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Try adjusting your search or browse different categories
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedCategory('all');
-                    }}
-                    variant="outline"
-                  >
-                    Clear Filters
-                  </Button>
+                <div className="text-center py-16">
+                  <div className="max-w-md mx-auto">
+                    <h3 className="text-xl font-semibold mb-2">No listings found</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Try adjusting your search or browse different categories
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('all');
+                      }}
+                      variant="outline"
+                      size="lg"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -249,11 +280,101 @@ export default function Marketplace() {
         </div>
       </div>
 
+      {/* Mobile Layout */}
+      <div className="lg:hidden min-h-screen flex flex-col">
+        <MarketplaceHeader
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onCreateListing={() => setShowCreateListing(true)}
+        />
+        
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-4 py-6 space-y-6">
+            {/* Results Header */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-foreground">
+                  {selectedCategory === 'all' ? 'All Listings' : 
+                   selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortBy(sortBy === 'newest' ? 'price-low' : sortBy === 'price-low' ? 'price-high' : 'newest')}
+                  className="gap-1"
+                >
+                  <SortAsc className="w-3 h-3" />
+                  Sort
+                </Button>
+              </div>
+              <p className="text-muted-foreground">
+                {filteredListings.length} items found
+                {searchQuery && ` for "${searchQuery}"`}
+              </p>
+            </div>
+
+            {/* Listings Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {filteredListings.slice(0, visibleCount).map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  {...listing}
+                  onFavoriteToggle={handleFavoriteToggle}
+                  onContact={handleContact}
+                />
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {visibleCount < filteredListings.length && (
+              <div className="text-center">
+                <Button 
+                  onClick={loadMore}
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 w-full sm:w-auto"
+                >
+                  Load More
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* No Results */}
+            {filteredListings.length === 0 && (
+              <div className="text-center py-12">
+                <div className="max-w-sm mx-auto">
+                  <h3 className="text-lg font-semibold mb-2">No listings found</h3>
+                  <p className="text-muted-foreground mb-4 text-sm">
+                    Try adjusting your search or browse different categories
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory('all');
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Disclaimer Section */}
+            <DisclaimerSection />
+          </div>
+        </main>
+      </div>
+
       <CreateListing
         isOpen={showCreateListing}
         onClose={() => setShowCreateListing(false)}
         onSubmit={handleCreateListing}
       />
-    </SidebarProvider>
+    </div>
   );
 }
