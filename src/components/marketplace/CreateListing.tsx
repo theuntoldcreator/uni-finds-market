@@ -157,8 +157,8 @@ export function CreateListing({ isOpen, onClose, onSubmit }: CreateListingProps)
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Create New Listing</DialogTitle>
-            <DialogDescription>
+            <DialogTitle id="create-listing-title" className="text-2xl">Create New Listing</DialogTitle>
+            <DialogDescription id="create-listing-description">
               Fill in the details below to create your marketplace listing
             </DialogDescription>
           </DialogHeader>
@@ -308,10 +308,10 @@ export function CreateListing({ isOpen, onClose, onSubmit }: CreateListingProps)
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent>
+        <DialogContent aria-labelledby="confirm-listing-title" aria-describedby="confirm-listing-description">
           <DialogHeader>
-            <DialogTitle>Confirm Your Listing</DialogTitle>
-            <DialogDescription>
+            <DialogTitle id="confirm-listing-title">Confirm Your Listing</DialogTitle>
+            <DialogDescription id="confirm-listing-description">
               Please review your listing details before publishing
             </DialogDescription>
           </DialogHeader>
